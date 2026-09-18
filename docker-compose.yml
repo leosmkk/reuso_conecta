@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: reuso_conecta
+      POSTGRES_USER: reuso
+      POSTGRES_PASSWORD: reuso
+    ports:
+      - "5440:5432"
+    volumes:
+      - reuso_conecta_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reuso -d reuso_conecta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: ./backend
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+    ports:
+      - "8000:8000"
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: reuso_conecta
+      DB_USERNAME: reuso
+      DB_PASSWORD: reuso
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  reuso_conecta_db:

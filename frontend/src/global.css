@@ -1,0 +1,28 @@
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: #F4F3FA;
+  font-family: Inter, system-ui, sans-serif;
+  color: #1B1A23;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+select option {
+  color: #1B1A23;
+  background: #fff;
+}

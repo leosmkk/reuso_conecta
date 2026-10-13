@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CertificadoController;
 use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\ExcluirController;
 use App\Http\Controllers\Api\InserirController;
+use App\Http\Controllers\Api\ModuloTenantController;
 use App\Http\Controllers\Api\PesquisarController;
 use App\Http\Controllers\Api\RelatorioController;
 use App\Http\Controllers\Api\TenantController;
@@ -25,3 +26,7 @@ Route::get('/certificados/{id}/documento', [CertificadoController::class, 'docum
 
 Route::get('/relatorios/resumo', [RelatorioController::class, 'resumo']);
 Route::get('/tenant-ativo', [TenantController::class, 'ativo']);
+
+// Central de módulos (Frente 2: Tenant/Modulo) — toggle em runtime da
+// variabilidade que hoje só trocava via .env + restart do container.
+Route::put('/tenants/{tenantId}/modulos/{moduloChave}', [ModuloTenantController::class, 'alternar']);

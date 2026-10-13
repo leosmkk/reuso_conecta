@@ -121,7 +121,20 @@ class EventoSeeder extends Seeder
             ],
         ];
 
+        // Data real, término e coordenadas (Curitiba) de cada evento — base
+        // do cancelamento (evento já realizado), do relatório por período
+        // e do mapa do módulo geo.
+        $detalhes = [
+            1 => ['data' => '2026-09-12', 'hora_fim' => '22:00', 'latitude' => -25.4519, 'longitude' => -49.2578],
+            2 => ['data' => '2026-09-18', 'hora_fim' => '16:30', 'latitude' => -25.4519, 'longitude' => -49.2578],
+            3 => ['data' => '2026-09-24', 'hora_fim' => '15:00', 'latitude' => -25.4350, 'longitude' => -49.2760],
+            4 => ['data' => '2026-10-02', 'hora_fim' => '18:00', 'latitude' => -25.4350, 'longitude' => -49.2760],
+            5 => ['data' => '2026-10-09', 'hora_fim' => '23:59', 'latitude' => -25.4519, 'longitude' => -49.2578],
+            6 => ['data' => '2026-10-15', 'hora_fim' => '18:00', 'latitude' => -25.4488, 'longitude' => -49.2601],
+        ];
+
         foreach ($eventos as $evento) {
+            $evento = array_merge($evento, $detalhes[$evento['ordem']] ?? []);
             Evento::updateOrCreate(['ordem' => $evento['ordem'], 'title' => $evento['title']], $evento);
         }
     }

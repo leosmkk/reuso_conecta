@@ -9,7 +9,7 @@ export default function Header({ screen, perfil, usuario, onNavigate, onBloquead
   return (
     <header
       style={{
-        height: 72,
+        minHeight: 72,
         background: color,
         display: 'flex',
         alignItems: 'center',
@@ -49,11 +49,11 @@ export default function Header({ screen, perfil, usuario, onNavigate, onBloquead
           display: 'flex',
           alignItems: 'stretch',
           gap: 2,
-          height: 72,
+          minHeight: 72,
           marginLeft: 8,
           flex: '1 1 auto',
           minWidth: 0,
-          overflowX: 'auto'
+          flexWrap: 'wrap'
         }}
       >
         {itens.map(({ id, label, locked }) => {
@@ -67,7 +67,7 @@ export default function Header({ screen, perfil, usuario, onNavigate, onBloquead
                 alignItems: 'center',
                 gap: 7,
                 height: 72,
-                padding: '0 16px',
+                padding: '0 12px',
                 border: 'none',
                 background: 'transparent',
                 color: '#fff',

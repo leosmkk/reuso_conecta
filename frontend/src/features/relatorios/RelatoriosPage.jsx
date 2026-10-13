@@ -4,6 +4,7 @@ import { useTenant } from '../../context/TenantContext.jsx';
 import { Loading, ErrorMessage } from '../../components/Feedback.jsx';
 import { PageHeader, Card } from '../../components/ui.jsx';
 import { cores, fonteTitulo } from '../../theme.js';
+import RelatorioParticipacao from './RelatorioParticipacao.jsx';
 
 // Porta de ConectaCampus.dc.html:438-487 (Relatórios gerenciais). Os 3
 // selects avançados (linhas 446-452) só aparecem com o módulo advReports
@@ -51,6 +52,8 @@ export default function RelatoriosPage() {
           <Resumo label="Vagas ocupadas / totais" valor={`${resumo.vagasOcupadas} / ${resumo.vagasTotais}`} />
         </div>
       </Card>
+
+      <RelatorioParticipacao />
 
       {!temAdvReports && (
         <Card>

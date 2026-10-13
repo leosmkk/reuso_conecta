@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Evento;
 use App\Patterns\Singleton\ConnectionFactory;
 use App\Support\ModuloGuard;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * GET /api/relatorios/resumo — o cenário em que ConnectionFactory se
@@ -60,5 +62,65 @@ class RelatorioController extends Controller
         }
 
         return response()->json($resumo);
+    }
+
+    /**
+     * SE01 — relatório de participação (RF30-RF34): por evento, inscritos,
+     * presentes, taxa de presença e ocupação das vagas, tudo calculado a
+     * partir de eventos, inscrições e presenças. Período vale sempre;
+     * status e aluno só filtram com o módulo advReports.
+     */
+    public function participacao(Request $request): JsonResponse
+    {
+        $consulta = Evento::query()->orderBy('data')->orderBy('ordem');
+
+        if ($request->filled('inicio')) {
+            $consulta->whereDate('data', '>=', $request->query('inicio'));
+        }
+        if ($request->filled('fim')) {
+            $consulta->whereDate('data', '<=', $request->query('fim'));
+        }
+
+        $avancado = ModuloGuard::possui('advReports');
+        $status = $avancado ? $request->query('status') : null;
+        $alunoId = $avancado ? $request->query('aluno_id') : null;
+
+        $linhas = [];
+        foreach ($consulta->get() as $evento) {
+            $realizado = $evento->jaRealizado();
+
+            if ($status === 'realizado' && !$realizado) {
+                continue;
+            }
+            if ($status === 'aberto' && $realizado) {
+                continue;
+            }
+
+            $inscricoes = $evento->inscricoes();
+            if ($alunoId) {
+                $inscricoes->where('aluno_id', (int) $alunoId);
+            }
+
+            $inscritos = (clone $inscricoes)->count();
+            if ($alunoId && $inscritos === 0) {
+                continue;
+            }
+
+            $presentes = (clone $inscricoes)->whereHas('presenca')->count();
+
+            $linhas[] = [
+                'eventoId' => (string) $evento->id,
+                'titulo' => $evento->title,
+                'data' => $evento->data?->format('Y-m-d'),
+                'dataLabel' => $evento->date_label,
+                'status' => $realizado ? 'realizado' : 'aberto',
+                'inscritos' => $inscritos,
+                'presentes' => $realizado ? $presentes : null,
+                'taxaPresenca' => $realizado && $inscritos > 0 ? round($presentes / $inscritos * 100, 1) : null,
+                'ocupacao' => $evento->seats_total > 0 ? round($evento->seats_used / $evento->seats_total * 100, 1) : null,
+            ];
+        }
+
+        return response()->json($linhas);
     }
 }

@@ -141,7 +141,7 @@ export default function CertificatesPage() {
   );
 }
 
-function TimelineAssinatura({ assinado, brand }) {
+export function TimelineAssinatura({ assinado, brand }) {
   const etapas = [
     { label: 'Centro acadêmico confirma', hint: 'Presença e carga horária validadas pela organização.', done: true },
     { label: 'Reitoria assina', hint: 'Assinatura digital do documento pela reitoria.', done: assinado },

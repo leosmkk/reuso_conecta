@@ -112,3 +112,71 @@ export function alternarModulo(tenantId, chave, ativo) {
     body: { ativo }
   });
 }
+
+// LOGIN — POST /api/login. Sem token: devolve o usuário (perfil + vínculos)
+// que o SessionContext guarda no navegador.
+export function login(email, senha) {
+  return request('/api/login', { method: 'POST', body: { email, senha } });
+}
+
+// CADASTROS — EE04 (aluno, público), EE05 (centro acadêmico, feito pela
+// Universidade) e EE06 (palestrante, feito pelo Centro Acadêmico).
+export function cadastrarAluno(dados) {
+  return request('/api/cadastro/aluno', { method: 'POST', body: dados });
+}
+
+export function cadastrarCentro(dados) {
+  return request('/api/centros-academicos', { method: 'POST', body: dados });
+}
+
+export function cadastrarPalestrante(dados) {
+  return request('/api/palestrantes', { method: 'POST', body: dados });
+}
+
+// INSCRIÇÃO — EE07/EE08. As regras de vaga, duplicidade e evento já
+// realizado ficam no backend e voltam como `message`.
+export function inscreverEmEvento(eventoId, alunoId) {
+  return request(`/api/eventos/${eventoId}/inscricoes`, {
+    method: 'POST',
+    body: { aluno_id: alunoId }
+  });
+}
+
+export function cancelarInscricao(inscricaoId) {
+  return request(`/api/inscricoes/${inscricaoId}`, { method: 'DELETE' });
+}
+
+export function buscarInscricoesDoAluno(alunoId) {
+  return request(`/api/alunos/${alunoId}/inscricoes`);
+}
+
+// PRESENÇA POR QR CODE — EE09 (Strategy QrCodeCheckIn no backend).
+export function validarPresenca(eventoId, token) {
+  return request('/api/presencas/validar', {
+    method: 'POST',
+    body: { evento_id: eventoId, token }
+  });
+}
+
+export function buscarPresencasDoEvento(eventoId) {
+  return request(`/api/eventos/${eventoId}/presencas`);
+}
+
+// RELATÓRIO DE PARTICIPAÇÃO — SE01. `filtros`: inicio, fim, status, aluno_id
+// (status e aluno_id só valem com o módulo advReports).
+export function buscarParticipacao(filtros = {}) {
+  const query = new URLSearchParams(
+    Object.entries(filtros).filter(([, valor]) => valor !== '' && valor != null)
+  ).toString();
+  return request(`/api/relatorios/participacao${query ? `?${query}` : ''}`);
+}
+
+// CERTIFICADO — SE02. Emite a partir de uma inscrição com presença e, com
+// dualSignature, a Reitoria assina na tela Aprovação.
+export function emitirCertificado(inscricaoId) {
+  return request(`/api/inscricoes/${inscricaoId}/certificado`, { method: 'POST' });
+}
+
+export function assinarCertificado(certificadoId) {
+  return request(`/api/certificados/${certificadoId}/assinar`, { method: 'PUT' });
+}

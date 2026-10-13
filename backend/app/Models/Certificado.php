@@ -67,6 +67,11 @@ class Certificado extends Model implements ApiSerializavel
             'hours' => $this->hours,
             'completedAt' => $this->completed_at,
             'status' => $this->status,
+            'inscricaoId' => $this->inscricao_id ? (string) $this->inscricao_id : null,
+            'codigo' => $this->inscricao_id ? $this->codigoValidacao() : null,
+            'alunoNome' => $this->getAluno()?->nome,
+            'matricula' => $this->getAluno()?->matricula,
+            'eventoTitulo' => $this->getEvento()?->title,
         ];
     }
 

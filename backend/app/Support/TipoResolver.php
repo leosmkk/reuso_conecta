@@ -4,10 +4,12 @@ namespace App\Support;
 
 use App\Models\Aluno;
 use App\Models\Certificado;
+use App\Models\CentroAcademico;
 use App\Models\Cracha;
 use App\Models\Evento;
 use App\Models\Inscricao;
 use App\Models\Modulo;
+use App\Models\Palestrante;
 use App\Models\Presenca;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +30,8 @@ class TipoResolver
         'crachas' => Cracha::class,
         'tenants' => Tenant::class,
         'modulos' => Modulo::class,
+        'centros' => CentroAcademico::class,
+        'palestrantes' => Palestrante::class,
     ];
 
     public static function valido(string $tipo): bool

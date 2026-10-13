@@ -18,7 +18,7 @@ class ExcluirController extends Controller
         $tipo = $request->query('tipo', 'eventos');
 
         if (!TipoResolver::valido($tipo)) {
-            return response()->json(['message' => 'Tipo inválido. Utilize eventos ou certificados.'], 400);
+            return response()->json(['message' => 'Tipo inválido. Utilize ' . TipoResolver::tiposDisponiveis() . '.'], 400);
         }
 
         if (!ctype_digit($id)) {

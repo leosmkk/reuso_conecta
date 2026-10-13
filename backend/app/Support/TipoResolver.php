@@ -2,8 +2,14 @@
 
 namespace App\Support;
 
+use App\Models\Aluno;
 use App\Models\Certificado;
+use App\Models\Cracha;
 use App\Models\Evento;
+use App\Models\Inscricao;
+use App\Models\Modulo;
+use App\Models\Presenca;
+use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -16,6 +22,12 @@ class TipoResolver
     private const MAPA = [
         'eventos' => Evento::class,
         'certificados' => Certificado::class,
+        'alunos' => Aluno::class,
+        'inscricoes' => Inscricao::class,
+        'presencas' => Presenca::class,
+        'crachas' => Cracha::class,
+        'tenants' => Tenant::class,
+        'modulos' => Modulo::class,
     ];
 
     public static function valido(string $tipo): bool
@@ -24,7 +36,7 @@ class TipoResolver
     }
 
     /**
-     * @return class-string<Model>
+     * @return class-string<Model&ApiSerializavel>
      */
     public static function modelClass(string $tipo): string
     {
@@ -33,6 +45,17 @@ class TipoResolver
 
     public static function novaQuery(string $tipo)
     {
-        return self::modelClass($tipo)::query()->orderBy('ordem');
+        $modelClass = self::modelClass($tipo);
+
+        return $modelClass::query()->orderBy($modelClass::ordenacaoPadrao());
+    }
+
+    /**
+     * Lista legível dos tipos válidos, para as mensagens de erro 400 dos
+     * controllers CRUD (ex.: "Tipo inválido. Utilize eventos, certificados, ...").
+     */
+    public static function tiposDisponiveis(): string
+    {
+        return implode(', ', array_keys(self::MAPA));
     }
 }

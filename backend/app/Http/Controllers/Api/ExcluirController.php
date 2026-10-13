@@ -32,6 +32,11 @@ class ExcluirController extends Controller
             return response()->json(['message' => 'Registro não encontrado.'], 404);
         }
 
+        // EE03: evento com inscritos não pode ser excluído.
+        if ($tipo === 'eventos' && $registro->inscricoes()->exists()) {
+            return response()->json(['message' => 'Evento com inscritos não pode ser excluído.'], 409);
+        }
+
         $registro->delete();
 
         return response()->json(['message' => 'Registro excluído com sucesso.']);

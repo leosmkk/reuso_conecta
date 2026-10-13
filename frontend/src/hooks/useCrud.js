@@ -8,7 +8,11 @@ import { pesquisar, inserir, alterar, excluir } from '../services/api.js';
 //
 // idDe(registro) resolve o id do jeito que cada tipo expõe — normalmente
 // `_id`, mas fica configurável para telas que precisem de outra chave.
-export function useCrud(tipo, { idDe = (registro) => registro._id, carregarAoMontar = true } = {}) {
+// `mensagens` troca os textos de sucesso (ex.: "Evento inserido com sucesso.").
+export function useCrud(
+  tipo,
+  { idDe = (registro) => registro._id, carregarAoMontar = true, mensagens = {} } = {}
+) {
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(carregarAoMontar);
   const [error, setError] = useState('');
@@ -68,10 +72,10 @@ export function useCrud(tipo, { idDe = (registro) => registro._id, carregarAoMon
 
       if (emEdicao) {
         await alterar(tipo, idDe(emEdicao), dados);
-        notificar('Registro alterado com sucesso.');
+        notificar(mensagens.alterado ?? 'Registro alterado com sucesso.');
       } else {
         await inserir(tipo, dados);
-        notificar('Registro inserido com sucesso.');
+        notificar(mensagens.inserido ?? 'Registro inserido com sucesso.');
       }
 
       fecharForm();
@@ -90,7 +94,7 @@ export function useCrud(tipo, { idDe = (registro) => registro._id, carregarAoMon
       setError('');
       await excluir(tipo, id);
       setConfirmarId(null);
-      notificar('Registro excluído com sucesso.');
+      notificar(mensagens.excluido ?? 'Registro excluído com sucesso.');
       await carregar();
     } catch (err) {
       console.error(err);

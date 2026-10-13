@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\ApiSerializavel;
 use App\Support\ModuloGuard;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RuntimeException;
 
@@ -21,12 +22,16 @@ class Evento extends Model implements ApiSerializavel
         'status', 'seats_used', 'seats_total',
         'description', 'hours', 'category', 'speaker', 'speaker_area',
         'address', 'empresa_parceira', 'tipo_apoio',
+        'data', 'hora_fim', 'palestrante_id', 'latitude', 'longitude',
     ];
 
     protected $casts = [
         'ordem' => 'integer',
         'seats_used' => 'integer',
         'seats_total' => 'integer',
+        'data' => 'date:Y-m-d',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     public function inscricoes(): HasMany
@@ -34,9 +39,23 @@ class Evento extends Model implements ApiSerializavel
         return $this->hasMany(Inscricao::class);
     }
 
+    public function palestrante(): BelongsTo
+    {
+        return $this->belongsTo(Palestrante::class);
+    }
+
     public function temVaga(): bool
     {
         return $this->seats_used < $this->seats_total;
+    }
+
+    /**
+     * Evento já aconteceu quando a data cadastrada é anterior a hoje —
+     * regra do cancelamento de inscrição (EE08).
+     */
+    public function jaRealizado(): bool
+    {
+        return $this->data !== null && $this->data->lt(today());
     }
 
     /**
@@ -46,12 +65,12 @@ class Evento extends Model implements ApiSerializavel
     public function inscrever(Aluno $aluno): Inscricao
     {
         if (!$this->temVaga()) {
-            throw new RuntimeException(sprintf('Evento "%s" está lotado.', $this->title));
+            throw new RuntimeException('Não há vagas disponíveis neste evento.');
         }
 
         $existente = $this->inscricoes()->where('aluno_id', $aluno->id)->first();
         if ($existente !== null) {
-            throw new RuntimeException(sprintf('%s já está inscrito em "%s".', $aluno->nome, $this->title));
+            throw new RuntimeException('Você já está inscrito neste evento.');
         }
 
         $inscricao = $this->inscricoes()->create([
@@ -62,7 +81,26 @@ class Evento extends Model implements ApiSerializavel
 
         $this->increment('seats_used');
 
+        if (!$this->temVaga()) {
+            $this->update(['status' => 'lotado']);
+        }
+
         return $inscricao;
+    }
+
+    /**
+     * Cancelamento libera a vaga ocupada (RF16-RF17) e reabre o evento
+     * quando ele estava lotado.
+     */
+    public function cancelarInscricao(Inscricao $inscricao): void
+    {
+        $inscricao->delete();
+
+        $this->decrement('seats_used');
+
+        if ($this->status === 'lotado' && $this->temVaga()) {
+            $this->update(['status' => 'vagas']);
+        }
     }
 
     /**
@@ -93,6 +131,12 @@ class Evento extends Model implements ApiSerializavel
             'address' => ModuloGuard::possui('geo') ? $this->address : null,
             'empresaParceira' => $this->empresa_parceira,
             'tipoApoio' => $this->tipo_apoio,
+            'data' => $this->data?->format('Y-m-d'),
+            'horaFim' => $this->hora_fim,
+            'palestranteId' => $this->palestrante_id ? (string) $this->palestrante_id : null,
+            'realizado' => $this->jaRealizado(),
+            'latitude' => ModuloGuard::possui('geo') ? $this->latitude : null,
+            'longitude' => ModuloGuard::possui('geo') ? $this->longitude : null,
         ];
     }
 
@@ -121,7 +165,15 @@ class Evento extends Model implements ApiSerializavel
             'speaker' => 'speaker',
             'speakerArea' => 'speaker_area',
             'address' => 'address',
+            'data' => 'data',
+            'horaFim' => 'hora_fim',
+            'palestranteId' => 'palestrante_id',
         ];
+
+        if (ModuloGuard::possui('geo')) {
+            $mapa['latitude'] = 'latitude';
+            $mapa['longitude'] = 'longitude';
+        }
 
         if (ModuloGuard::possui('customField')) {
             $mapa['empresaParceira'] = 'empresa_parceira';

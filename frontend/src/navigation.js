@@ -8,24 +8,34 @@ export const navDefs = {
   aluno: [
     ['inicio', 'Início'],
     ['agenda', 'Agenda'],
-    ['certificados', 'Certificados']
+    ['minhasInscricoes', 'Minhas inscrições'],
+    ['meusCertificados', 'Certificados'],
+    ['conta', 'Minha conta']
   ],
   centro: [
     ['agenda', 'Agenda'],
     ['alunos', 'Alunos'],
+    ['palestrantes', 'Palestrantes'],
     ['inscricoes', 'Inscrições'],
-    ['presencas', 'Presenças', 'qrcode'],
-    ['crachas', 'Crachás']
+    ['validarPresenca', 'Validar presença', 'qrcode'],
+    ['presencas', 'Presenças'],
+    ['crachas', 'Crachás'],
+    ['relatorios', 'Relatórios'],
+    ['conta', 'Minha conta']
   ],
   universidade: [
     ['relatorios', 'Relatórios'],
+    ['centros', 'Centros acadêmicos'],
+    ['aprovacao', 'Aprovação', 'dualSignature', 'hide'],
+    ['certificados', 'Certificados', 'dualSignature', 'hide'],
     ['modulos', 'Central de módulos'],
     ['tenants', 'Instituições'],
-    ['certificados', 'Certificados', 'dualSignature', 'hide']
+    ['conta', 'Minha conta']
   ],
   palestrante: [
+    ['meusEventos', 'Meus eventos'],
     ['agenda', 'Agenda'],
-    ['inicio', 'Início']
+    ['conta', 'Minha conta']
   ]
 };
 

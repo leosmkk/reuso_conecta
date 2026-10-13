@@ -50,6 +50,18 @@ sempre em `{"message": "..."}`.
 | POST | `/api/checkin` | Confirma presença (**Strategy**) — `{evento_id, ...payload}` |
 | GET | `/api/certificados/{id}/documento` | Gera o certificado (**Template Method**) |
 | GET | `/api/relatorios/resumo` | Totais via SQL puro (**Singleton** `ConnectionFactory`) |
+| POST | `/api/login` | `{email, senha}` → `{usuario}` (401 se inválido) |
+| POST | `/api/cadastro/aluno` | EE04 — cria aluno + acesso (409 e-mail/matrícula repetidos) |
+| POST | `/api/centros-academicos` | EE05 — cria centro + acesso |
+| POST | `/api/palestrantes` | EE06 — cria palestrante + acesso |
+| POST | `/api/eventos/{id}/inscricoes` | EE07 — `{aluno_id}`; 409 sem vagas / já inscrito |
+| DELETE | `/api/inscricoes/{id}` | EE08 — libera a vaga; 409 se o evento já foi realizado |
+| GET | `/api/alunos/{id}/inscricoes` | Inscrições do aluno com evento, presença e certificado |
+| POST | `/api/presencas/validar` | EE09 — `{evento_id, token}` (**Strategy** QR; módulo `qrcode`) |
+| GET | `/api/eventos/{id}/presencas` | Check-ins do evento |
+| GET | `/api/relatorios/participacao?inicio&fim&status&aluno_id` | SE01 — status/aluno só com `advReports` |
+| POST | `/api/inscricoes/{id}/certificado` | SE02 — emite (422 sem presença) |
+| PUT | `/api/certificados/{id}/assinar` | Assinatura da Reitoria (módulo `dualSignature`) |
 
 ## Onde cada padrão atua
 

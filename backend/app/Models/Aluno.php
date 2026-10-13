@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Aluno extends Model implements ApiSerializavel
 {
-    protected $fillable = ['nome', 'email', 'telefone', 'matricula', 'curso', 'semestre'];
+    protected $fillable = ['nome', 'email', 'telefone', 'matricula', 'curso', 'semestre', 'nascimento'];
 
     protected $casts = [
         'semestre' => 'integer',
+        'nascimento' => 'date:Y-m-d',
     ];
 
     public function inscricoes(): HasMany
@@ -34,6 +35,7 @@ class Aluno extends Model implements ApiSerializavel
             'matricula' => $this->matricula,
             'curso' => $this->curso,
             'semestre' => $this->semestre,
+            'nascimento' => $this->nascimento?->format('Y-m-d'),
         ];
     }
 
@@ -46,6 +48,7 @@ class Aluno extends Model implements ApiSerializavel
             'matricula' => 'matricula',
             'curso' => 'curso',
             'semestre' => 'semestre',
+            'nascimento' => 'nascimento',
         ];
 
         $atributos = [];

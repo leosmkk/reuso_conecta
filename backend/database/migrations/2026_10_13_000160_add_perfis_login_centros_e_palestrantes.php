@@ -32,6 +32,10 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::table('alunos', function (Blueprint $table) {
+            $table->date('nascimento')->nullable();
+        });
+
         Schema::table('users', function (Blueprint $table) {
             $table->string('perfil')->default('aluno');
             $table->foreignId('aluno_id')->nullable()->constrained('alunos')->nullOnDelete();
@@ -60,6 +64,10 @@ return new class extends Migration
             $table->dropConstrainedForeignId('centro_academico_id');
             $table->dropConstrainedForeignId('aluno_id');
             $table->dropColumn('perfil');
+        });
+
+        Schema::table('alunos', function (Blueprint $table) {
+            $table->dropColumn('nascimento');
         });
 
         Schema::dropIfExists('palestrantes');

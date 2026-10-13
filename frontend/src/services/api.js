@@ -31,28 +31,50 @@ async function request(path, { method = 'GET', body } = {}) {
   return dados;
 }
 
-// PESQUISAR — GET /api/pesquisar
+// PESQUISAR — GET /api/pesquisar?tipo=&id=. Genérico: usado pelas 8 telas
+// CRUD (eventos, certificados, alunos, inscricoes, presencas, crachas,
+// tenants, modulos — ver App\Support\TipoResolver::MAPA no backend).
+export function pesquisar(tipo, id) {
+  const query = id ? `?tipo=${tipo}&id=${id}` : `?tipo=${tipo}`;
+  return request(`/api/pesquisar${query}`);
+}
+
+// INSERIR — POST /api/inserir?tipo=
+export function inserir(tipo, dados) {
+  return request(`/api/inserir?tipo=${tipo}`, { method: 'POST', body: dados });
+}
+
+// ALTERAR — PUT /api/alterar/{id}?tipo=
+export function alterar(tipo, id, dados) {
+  return request(`/api/alterar/${id}?tipo=${tipo}`, { method: 'PUT', body: dados });
+}
+
+// EXCLUIR — DELETE /api/excluir/{id}?tipo=
+export function excluir(tipo, id) {
+  return request(`/api/excluir/${id}?tipo=${tipo}`, { method: 'DELETE' });
+}
+
+// Wrappers finos mantidos pelo nome antigo — AgendaPage.jsx e
+// CertificatesPage.jsx (e o contrato documentado no README) já os chamam
+// assim.
 export function buscarEventos() {
-  return request('/api/pesquisar?tipo=eventos');
+  return pesquisar('eventos');
 }
 
 export function buscarCertificados() {
-  return request('/api/pesquisar?tipo=certificados');
+  return pesquisar('certificados');
 }
 
-// INSERIR — POST /api/inserir
 export function inserirEvento(dados) {
-  return request('/api/inserir?tipo=eventos', { method: 'POST', body: dados });
+  return inserir('eventos', dados);
 }
 
-// ALTERAR — PUT /api/alterar/{id}
 export function alterarEvento(id, dados) {
-  return request(`/api/alterar/${id}?tipo=eventos`, { method: 'PUT', body: dados });
+  return alterar('eventos', id, dados);
 }
 
-// EXCLUIR — DELETE /api/excluir/{id}
 export function excluirEvento(id) {
-  return request(`/api/excluir/${id}?tipo=eventos`, { method: 'DELETE' });
+  return excluir('eventos', id);
 }
 
 // CHECKIN — POST /api/checkin (Strategy: App\Patterns\Strategy\CheckInContext)
@@ -67,4 +89,26 @@ export function confirmarPresenca(eventoId, payload = {}) {
 // App\Patterns\TemplateMethod\GeradorCertificado)
 export function gerarDocumentoCertificado(id) {
   return request(`/api/certificados/${id}/documento`);
+}
+
+// TENANT ATIVO — GET /api/tenant-ativo (variabilidade de marca por
+// tenant: App\Patterns\Singleton\VariabilityConfig + App\Models\Tenant)
+export function buscarTenantAtivo() {
+  return request('/api/tenant-ativo');
+}
+
+// RELATORIOS — GET /api/relatorios/resumo (Singleton ConnectionFactory,
+// SQL puro; inscricoesPorCurso/eventosPorStatus só vêm com o módulo advReports)
+export function buscarResumoRelatorios() {
+  return request('/api/relatorios/resumo');
+}
+
+// MÓDULO POR TENANT — PUT /api/tenants/{tenantId}/modulos/{chave}. É o
+// switch da Central de Módulos: liga/desliga a variabilidade da LPS em
+// runtime, sem trocar .env nem reiniciar o container.
+export function alternarModulo(tenantId, chave, ativo) {
+  return request(`/api/tenants/${tenantId}/modulos/${chave}`, {
+    method: 'PUT',
+    body: { ativo }
+  });
 }

@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTenant } from '../../context/TenantContext.jsx';
+import { pesquisar } from '../../services/api.js';
+import { ErrorMessage } from '../../components/Feedback.jsx';
+import { rotuloData } from './rotuloData.js';
 import { Modal, Campo, PrimaryButton, GhostButton, inputStyle } from '../../components/ui.jsx';
 import { fonteTitulo, cores } from '../../theme.js';
 
 const CAMPOS_NUMERICOS = ['order', 'seatsUsed', 'seatsTotal'];
+const CAMPOS_COORDENADA = ['latitude', 'longitude'];
 
 const CATEGORIAS = ['Palestra', 'Oficina', 'Congresso', 'Mostra', 'Competição', 'Roda de conversa'];
 const TIPOS_APOIO = ['Patrocínio financeiro', 'Cessão de espaço', 'Apoio institucional'];
@@ -17,8 +21,12 @@ export default function EventoForm({ evento, salvando, proximaOrdem, onSalvar, o
   const [form, setForm] = useState(() => ({
     title: evento?.title ?? '',
     org: evento?.org ?? '',
-    dateLabel: evento?.dateLabel ?? '',
+    data: evento?.data ?? '',
     time: evento?.time ?? '',
+    horaFim: evento?.horaFim ?? '',
+    palestranteId: evento?.palestranteId ?? '',
+    latitude: evento?.latitude ?? '',
+    longitude: evento?.longitude ?? '',
     place: evento?.place ?? '',
     status: evento?.status ?? 'vagas',
     order: evento?.order ?? proximaOrdem,
@@ -34,35 +42,66 @@ export default function EventoForm({ evento, salvando, proximaOrdem, onSalvar, o
     tipoApoio: evento?.tipoApoio ?? TIPOS_APOIO[0]
   }));
 
+  const [palestrantes, setPalestrantes] = useState([]);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    pesquisar('palestrantes')
+      .then(setPalestrantes)
+      .catch((err) => console.error('Não foi possível carregar os palestrantes:', err));
+  }, []);
+
   function set(campo, valor) {
     setForm((atual) => ({ ...atual, [campo]: valor }));
+  }
+
+  // Escolher um palestrante cadastrado preenche nome e área; "Outro" deixa
+  // os dois campos de texto livres (ex.: "Comitê científico").
+  function escolherPalestrante(id) {
+    const escolhido = palestrantes.find((p) => p._id === id);
+    setForm((atual) => ({
+      ...atual,
+      palestranteId: id,
+      speaker: escolhido ? escolhido.nome : atual.speaker,
+      speakerArea: escolhido ? escolhido.areaAtuacao ?? '' : atual.speakerArea
+    }));
   }
 
   function submeter(e) {
     e.preventDefault();
 
-    const dados = { ...form };
+    if (!form.title.trim() || !form.data || !form.time.trim() || !form.place.trim()) {
+      setErro('Preencha todos os campos obrigatórios.');
+      return;
+    }
+    setErro('');
+
+    const dados = { ...form, dateLabel: rotuloData(form.data) };
     CAMPOS_NUMERICOS.forEach((campo) => {
       dados[campo] = Number(dados[campo]) || 0;
     });
+    CAMPOS_COORDENADA.forEach((campo) => {
+      dados[campo] = dados[campo] === '' ? null : Number(dados[campo]);
+    });
+    dados.palestranteId = dados.palestranteId || null;
+    dados.horaFim = dados.horaFim || null;
 
     onSalvar(dados);
   }
 
   return (
     <Modal onFechar={onCancelar} largura={680}>
-      <form onSubmit={submeter}>
-        <h2 style={modalTitle}>{editando ? 'Editar evento' : 'Cadastrar evento'}</h2>
+      <form onSubmit={submeter} noValidate>
+        <h2 style={modalTitle}>{editando ? 'Alterar evento' : 'Cadastrar evento'}</h2>
         <p style={modalHint}>
           {editando
-            ? 'As alterações são enviadas para a Function alterar (PUT /api/alterar/{id}).'
-            : 'Os dados são enviados para a Function inserir (POST /api/inserir).'}
+            ? 'Altera um registro de eventos; o palestrante vem do cadastro de palestrantes.'
+            : 'Inclui um evento; o palestrante é lido do cadastro de palestrantes.'}
         </p>
 
         <div style={grid}>
           <Campo full label="Título do evento">
             <input
-              required
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
               style={inputStyle}
@@ -88,18 +127,27 @@ export default function EventoForm({ evento, salvando, proximaOrdem, onSalvar, o
 
           <Campo label="Data">
             <input
-              placeholder="12 de setembro"
-              value={form.dateLabel}
-              onChange={(e) => set('dateLabel', e.target.value)}
+              type="date"
+              value={form.data}
+              onChange={(e) => set('data', e.target.value)}
               style={inputStyle}
             />
           </Campo>
 
-          <Campo label="Horário">
+          <Campo label="Horário de início">
             <input
               placeholder="19:00"
               value={form.time}
               onChange={(e) => set('time', e.target.value)}
+              style={inputStyle}
+            />
+          </Campo>
+
+          <Campo label="Horário de término">
+            <input
+              placeholder="22:00"
+              value={form.horaFim}
+              onChange={(e) => set('horaFim', e.target.value)}
               style={inputStyle}
             />
           </Campo>
@@ -113,14 +161,36 @@ export default function EventoForm({ evento, salvando, proximaOrdem, onSalvar, o
           </Campo>
 
           {temGeo && (
-            <Campo full label="Endereço completo (para o mapa)">
-              <input
-                placeholder="Auditório Central — Bloco A, Campus Sede"
-                value={form.address}
-                onChange={(e) => set('address', e.target.value)}
-                style={inputStyle}
-              />
-            </Campo>
+            <>
+              <Campo full label="Endereço completo (para o mapa)">
+                <input
+                  placeholder="Auditório Central — Bloco A, Campus Sede"
+                  value={form.address}
+                  onChange={(e) => set('address', e.target.value)}
+                  style={inputStyle}
+                />
+              </Campo>
+              <Campo label="Latitude">
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="-25.4519"
+                  value={form.latitude}
+                  onChange={(e) => set('latitude', e.target.value)}
+                  style={inputStyle}
+                />
+              </Campo>
+              <Campo label="Longitude">
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="-49.2578"
+                  value={form.longitude}
+                  onChange={(e) => set('longitude', e.target.value)}
+                  style={inputStyle}
+                />
+              </Campo>
+            </>
           )}
 
           <Campo label="Carga horária">
@@ -142,7 +212,22 @@ export default function EventoForm({ evento, salvando, proximaOrdem, onSalvar, o
             </select>
           </Campo>
 
-          <Campo label="Palestrante">
+          <Campo full label="Palestrante cadastrado">
+            <select
+              value={form.palestranteId}
+              onChange={(e) => escolherPalestrante(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="">Outro / convidado (texto livre)</option>
+              {palestrantes.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+          </Campo>
+
+          <Campo label="Nome do palestrante">
             <input
               value={form.speaker}
               onChange={(e) => set('speaker', e.target.value)}
@@ -231,13 +316,19 @@ export default function EventoForm({ evento, salvando, proximaOrdem, onSalvar, o
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 12, marginTop: 26 }}>
+        {erro && (
+          <div style={{ marginTop: 22 }}>
+            <ErrorMessage message={erro} />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 12, marginTop: erro ? 0 : 26 }}>
           <PrimaryButton type="submit" brand={brand} disabled={salvando}>
             {salvando
               ? 'Salvando...'
               : editando
                 ? 'Salvar alterações'
-                : 'Cadastrar evento'}
+                : 'Salvar evento'}
           </PrimaryButton>
           <GhostButton type="button" onClick={onCancelar} style={{ height: 47, padding: '0 22px', fontSize: 14 }}>
             Cancelar

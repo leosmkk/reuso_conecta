@@ -9,6 +9,7 @@ use App\Models\Evento;
 use App\Patterns\Singleton\VariabilityConfig;
 use App\Patterns\Strategy\CheckInContext;
 use App\Patterns\Strategy\CheckInMethodFactory;
+use App\Support\ModuloGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -30,6 +31,16 @@ class CheckInController extends Controller
 
         if (!is_numeric($eventoId)) {
             return response()->json(['message' => 'evento_id é obrigatório.'], 400);
+        }
+
+        // Módulo qrcode (ConectaCampus.dc.html:388-436, aba "Validar
+        // presença" travada sem o módulo): se CHECKIN_METHOD=qrcode mas o
+        // tenant ativo não contratou o módulo, a estratégia nem chega a
+        // rodar — 403, igual à tela Bloqueado do mockup.
+        if ($config->getCheckInMethod() === 'qrcode' && !ModuloGuard::possui('qrcode')) {
+            return response()->json([
+                'message' => 'Validação de presença por QR Code não faz parte da contratação deste tenant.',
+            ], 403);
         }
 
         $evento = Evento::find((int) $eventoId);

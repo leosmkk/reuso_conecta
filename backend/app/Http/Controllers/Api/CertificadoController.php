@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Certificado;
 use App\Patterns\Singleton\VariabilityConfig;
 use App\Patterns\TemplateMethod\GeradorCertificadoFactory;
+use App\Support\ModuloGuard;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -27,6 +28,16 @@ class CertificadoController extends Controller
         if (!$certificado->podeGerarDocumento()) {
             return response()->json([
                 'message' => 'Este certificado ainda não pode ser gerado: presença não confirmada.',
+            ], 422);
+        }
+
+        // Módulo dualSignature (ConectaCampus.dc.html:324-350): quando o
+        // tenant contratou o fluxo de dupla assinatura, o documento só sai
+        // depois que a Reitoria assinar (status muda para "assinado" pelo
+        // CRUD de Certificados).
+        if (ModuloGuard::possui('dualSignature') && $certificado->status !== 'assinado') {
+            return response()->json([
+                'message' => 'Este certificado aguarda a assinatura da Reitoria.',
             ], 422);
         }
 

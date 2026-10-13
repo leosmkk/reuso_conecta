@@ -12,14 +12,18 @@ class CertificadoSeeder extends Seeder
     public function run(): void
     {
         // Catálogo plano, cópia de conectacampus/mongodb-seed/certificados.json
-        // — é o que CertificatesPage.jsx lista hoje.
+        // — é o que CertificatesPage.jsx lista hoje. status varia pelo fluxo
+        // de dupla assinatura do módulo dualSignature (disponivel ->
+        // aguardando_reitoria -> assinado), para a timeline do mockup
+        // (ConectaCampus.dc.html:328-350) ter o que mostrar assim que o
+        // banco é semeado.
         $catalogo = [
             [
                 'ordem' => 1,
                 'title' => 'Semana de Tecnologia 2026',
                 'hours' => '12h',
                 'completed_at' => 'concluído em 14 de setembro de 2026',
-                'status' => 'disponivel',
+                'status' => 'aguardando_reitoria',
             ],
             [
                 'ordem' => 2,
@@ -54,7 +58,7 @@ class CertificadoSeeder extends Seeder
                         'title' => $evento->title,
                         'hours' => '12h',
                         'completed_at' => 'concluído em 12 de setembro de 2026',
-                        'status' => 'disponivel',
+                        'status' => 'assinado',
                         'inscricao_id' => $inscricao->id,
                         'emitido_por' => 'Secretaria Acadêmica',
                         'assinante' => 'Gerência de RH',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ApiSerializavel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,8 +15,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * 2. Quando `inscricao_id` está preenchido, é o objeto real que os
  *    geradores de App\Patterns\TemplateMethod renderizam (endpoint
  *    GET /api/certificados/{id}/documento).
+ *
+ * `status` também carrega o fluxo de dupla assinatura do módulo
+ * dualSignature: disponivel -> aguardando_reitoria -> assinado (ver
+ * CertificadoController::documento).
  */
-class Certificado extends Model
+class Certificado extends Model implements ApiSerializavel
 {
     protected $fillable = [
         'ordem', 'title', 'hours', 'completed_at', 'status',
@@ -86,5 +91,10 @@ class Certificado extends Model
         }
 
         return $atributos;
+    }
+
+    public static function ordenacaoPadrao(): string
+    {
+        return 'ordem';
     }
 }

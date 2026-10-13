@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ApiSerializavel;
+use App\Support\ModuloGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RuntimeException;
@@ -12,11 +14,13 @@ use RuntimeException;
  * reservadas do Postgres (`order`, `time`) — a conversão para o JSON
  * camelCase que o frontend espera acontece em toApiArray().
  */
-class Evento extends Model
+class Evento extends Model implements ApiSerializavel
 {
     protected $fillable = [
         'ordem', 'title', 'org', 'date_label', 'hora', 'place',
         'status', 'seats_used', 'seats_total',
+        'description', 'hours', 'category', 'speaker', 'speaker_area',
+        'address', 'empresa_parceira', 'tipo_apoio',
     ];
 
     protected $casts = [
@@ -64,6 +68,9 @@ class Evento extends Model
     /**
      * Shape exato que o backend Node antigo (azure-function/src/functions/
      * pesquisar.js) devolvia: sem envelope, chaves camelCase, _id string.
+     * `address` só aparece quando o tenant ativo tem o módulo geo (ver
+     * App\Support\ModuloGuard) — mesmo gate que o bloco "Local" do
+     * mockup (ConectaCampus.dc.html:275).
      */
     public function toApiArray(): array
     {
@@ -78,13 +85,23 @@ class Evento extends Model
             'status' => $this->status,
             'seatsUsed' => $this->seats_used,
             'seatsTotal' => $this->seats_total,
+            'description' => $this->description,
+            'hours' => $this->hours,
+            'category' => $this->category,
+            'speaker' => $this->speaker,
+            'speakerArea' => $this->speaker_area,
+            'address' => ModuloGuard::possui('geo') ? $this->address : null,
+            'empresaParceira' => $this->empresa_parceira,
+            'tipoApoio' => $this->tipo_apoio,
         ];
     }
 
     /**
      * Inverso de toApiArray(): traduz o payload camelCase que
-     * EventoForm.jsx envia (title/org/dateLabel/time/place/status/order/
-     * seatsUsed/seatsTotal) para as colunas snake_case do model.
+     * EventoForm.jsx envia para as colunas snake_case do model.
+     * empresaParceira/tipoApoio só são aceitos quando o tenant ativo tem
+     * o módulo customField — mesmo gate do bloco extra da tela
+     * "Cadastrar evento" (ConectaCampus.dc.html:373).
      */
     public static function fromApiPayload(array $dados): array
     {
@@ -98,7 +115,18 @@ class Evento extends Model
             'status' => 'status',
             'seatsUsed' => 'seats_used',
             'seatsTotal' => 'seats_total',
+            'description' => 'description',
+            'hours' => 'hours',
+            'category' => 'category',
+            'speaker' => 'speaker',
+            'speakerArea' => 'speaker_area',
+            'address' => 'address',
         ];
+
+        if (ModuloGuard::possui('customField')) {
+            $mapa['empresaParceira'] = 'empresa_parceira';
+            $mapa['tipoApoio'] = 'tipo_apoio';
+        }
 
         $atributos = [];
         foreach ($mapa as $chaveJson => $coluna) {
@@ -108,5 +136,10 @@ class Evento extends Model
         }
 
         return $atributos;
+    }
+
+    public static function ordenacaoPadrao(): string
+    {
+        return 'ordem';
     }
 }

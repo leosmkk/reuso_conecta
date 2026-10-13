@@ -6,9 +6,11 @@ use App\Models\Evento;
 use Illuminate\Database\Seeder;
 
 /**
- * Cópia fiel de conectacampus/mongodb-seed/eventos.json, para o
- * GET /api/pesquisar?tipo=eventos devolver os mesmos 4 eventos que a
- * versão Node/MongoDB já mostrava.
+ * Cópia fiel de conectacampus/mongodb-seed/eventos.json (4 primeiros) +
+ * os 2 eventos extras do mockup legacy (Hackathon Interunidades, Roda de
+ * conversa — conectacampus/legacy/ConectaCampus.dc.html:653-659), com os
+ * campos de descrição/carga/categoria/palestrante/endereço que o mockup
+ * usa na tela de Detalhe do evento.
  */
 class EventoSeeder extends Seeder
 {
@@ -25,6 +27,12 @@ class EventoSeeder extends Seeder
                 'status' => 'inscrito',
                 'seats_used' => 148,
                 'seats_total' => 240,
+                'description' => 'Três dias de palestras, oficinas e mostra de projetos abertos a toda a comunidade acadêmica, com trilhas de dados, engenharia e produto.',
+                'hours' => '12h',
+                'category' => 'Congresso',
+                'speaker' => 'Dra. Helena Coutinho',
+                'speaker_area' => 'Engenharia de Software',
+                'address' => 'Auditório Central — Bloco A, Campus Sede, Av. das Palmeiras 1200',
             ],
             [
                 'ordem' => 2,
@@ -36,6 +44,12 @@ class EventoSeeder extends Seeder
                 'status' => 'vagas',
                 'seats_used' => 34,
                 'seats_total' => 60,
+                'description' => 'Uma discussão sobre responsabilidade, viés algorítmico e regulação, com estudos de caso recentes.',
+                'hours' => '2h',
+                'category' => 'Palestra',
+                'speaker' => 'Prof. Marco Teixeira',
+                'speaker_area' => 'Filosofia da tecnologia',
+                'address' => 'Sala B-204 — Bloco B, Campus Sede, Av. das Palmeiras 1200',
             ],
             [
                 'ordem' => 3,
@@ -47,6 +61,12 @@ class EventoSeeder extends Seeder
                 'status' => 'lotado',
                 'seats_used' => 40,
                 'seats_total' => 40,
+                'description' => 'Montagem e programação de kits de robótica aplicados ao ensino básico.',
+                'hours' => '6h',
+                'category' => 'Oficina',
+                'speaker' => 'Eng. Priscila Nunes',
+                'speaker_area' => 'Automação industrial',
+                'address' => 'Laboratório de Automação — Bloco D, Campus Norte',
             ],
             [
                 'ordem' => 4,
@@ -58,6 +78,46 @@ class EventoSeeder extends Seeder
                 'status' => 'vagas',
                 'seats_used' => 210,
                 'seats_total' => 500,
+                'description' => 'Apresentação dos projetos de iniciação científica do semestre com avaliação por banca.',
+                'hours' => '8h',
+                'category' => 'Mostra',
+                'speaker' => 'Comitê científico',
+                'speaker_area' => 'Multidisciplinar',
+                'address' => 'Pavilhão Norte — Campus Norte, Rua dos Ipês 45',
+            ],
+            [
+                'ordem' => 5,
+                'title' => 'Hackathon Interunidades',
+                'org' => 'Centro Acadêmico de Computação',
+                'date_label' => '9 de outubro',
+                'hora' => '18:00',
+                'place' => 'Bloco D — Coworking',
+                'status' => 'inscrito',
+                'seats_used' => 96,
+                'seats_total' => 120,
+                'description' => '36 horas de desenvolvimento em times mistos sobre desafios reais das unidades da instituição.',
+                'hours' => '30h',
+                'category' => 'Competição',
+                'speaker' => 'Mentoria convidada',
+                'speaker_area' => 'Produto e tecnologia',
+                'address' => 'Coworking acadêmico — Bloco D, Campus Sede',
+            ],
+            [
+                'ordem' => 6,
+                'title' => 'Roda de conversa: Carreira e mercado',
+                'org' => 'Centro Acadêmico de Administração',
+                'date_label' => '15 de outubro',
+                'hora' => '16:00',
+                'place' => 'Biblioteca Central',
+                'status' => 'vagas',
+                'seats_used' => 18,
+                'seats_total' => 45,
+                'description' => 'Conversa aberta com egressos sobre transição da graduação para o mercado.',
+                'hours' => '2h',
+                'category' => 'Roda de conversa',
+                'speaker' => 'Egressos convidados',
+                'speaker_area' => 'Gestão e negócios',
+                'address' => 'Biblioteca Central — Térreo, Campus Sede',
             ],
         ];
 

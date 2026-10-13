@@ -1,7 +1,7 @@
 import { useTenant } from '../context/TenantContext.jsx';
 import { itensDeMenu, perfis } from '../navigation.js';
 
-export default function Header({ screen, perfil, onNavigate, onBloqueado, onPerfil }) {
+export default function Header({ screen, perfil, usuario, onNavigate, onBloqueado, onSair }) {
   const { nome, corPrimaria, modulosAtivos } = useTenant();
   const color = corPrimaria;
   const itens = itensDeMenu(perfil, modulosAtivos);
@@ -90,28 +90,37 @@ export default function Header({ screen, perfil, onNavigate, onBloqueado, onPerf
         })}
       </nav>
 
-      <select
-        value={perfil}
-        onChange={(e) => onPerfil(e.target.value)}
+      <div
         style={{
-          appearance: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          flex: 'none',
           background: 'rgba(255,255,255,.15)',
           border: '1px solid rgba(255,255,255,.3)',
-          color: '#fff',
-          font: '600 12.5px Inter, sans-serif',
-          padding: '9px 14px',
           borderRadius: 10,
-          cursor: 'pointer',
-          outline: 'none',
-          flex: 'none'
+          padding: '6px 6px 6px 14px',
+          font: '600 12.5px Inter, sans-serif'
         }}
       >
-        {perfis.map(([id, label]) => (
-          <option key={id} value={id} style={{ color: '#1B1A23' }}>
-            {label}
-          </option>
-        ))}
-      </select>
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {perfis.find(([id]) => id === perfil)?.[1]} · {usuario.nome}
+        </span>
+        <button
+          onClick={onSair}
+          style={{
+            border: 'none',
+            background: 'rgba(255,255,255,.22)',
+            color: '#fff',
+            font: '700 12px Inter, sans-serif',
+            padding: '7px 12px',
+            borderRadius: 8,
+            cursor: 'pointer'
+          }}
+        >
+          Sair
+        </button>
+      </div>
     </header>
   );
 }

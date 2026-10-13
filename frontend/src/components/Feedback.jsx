@@ -47,3 +47,21 @@ export function ErrorMessage({ message }) {
     </div>
   );
 }
+
+export function WarningMessage({ message, children }) {
+  return (
+    <div
+      style={{
+        background: '#FFF4DD',
+        color: '#8A5A00',
+        borderRadius: 14,
+        padding: '14px 18px',
+        marginBottom: 18,
+        fontSize: 14,
+        fontWeight: 600
+      }}
+    >
+      {message ?? children}
+    </div>
+  );
+}

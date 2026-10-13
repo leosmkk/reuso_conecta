@@ -1,51 +1,79 @@
-import { useEffect, useState } from 'react';
-import { pesquisar } from '../../services/api.js';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  buscarInscricoesDoAluno,
+  cancelarInscricao,
+  inscreverEmEvento,
+  pesquisar
+} from '../../services/api.js';
+import { useSession } from '../../context/SessionContext.jsx';
 import { useTenant } from '../../context/TenantContext.jsx';
-import { Loading, ErrorMessage } from '../../components/Feedback.jsx';
-import { Card, StatusBadge, GhostButton } from '../../components/ui.jsx';
+import { Loading, ErrorMessage, SuccessMessage, WarningMessage } from '../../components/Feedback.jsx';
+import { Card, StatusBadge, GhostButton, PrimaryButton, DangerGhostButton } from '../../components/ui.jsx';
 import { cores, fonteTitulo } from '../../theme.js';
 
-// Porta de ConectaCampus.dc.html:253-309 — fora do menu, alcançada por
-// clique num card da Agenda ou do Início (goEvento). O mapa mock é gated
-// pelo módulo geo, igual ao mockup (linha 275).
+// CE02 / EE07 — detalhe do evento: inscrição e cancelamento do aluno
+// (RF10-RF17) e, com o módulo geo, mapa do evento (AIE Google Maps) e a
+// localização do usuário (AIE Geolocalização, RF27-RF29).
 export default function EventoDetalhe({ eventoId, onVoltar }) {
   const { corPrimaria: brand, modulosAtivos } = useTenant();
+  const { usuario } = useSession();
+  const ehAluno = usuario.perfil === 'aluno';
   const [evento, setEvento] = useState(null);
+  const [inscricao, setInscricao] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [resultado, setResultado] = useState(null);
+  const [enviando, setEnviando] = useState(false);
   const temGeo = modulosAtivos.includes('geo');
 
-  useEffect(() => {
-    let cancelado = false;
+  const carregar = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const dados = await pesquisar('eventos', eventoId);
+      setEvento(dados);
 
-    async function carregar() {
-      try {
-        setLoading(true);
-        setError('');
-        const dados = await pesquisar('eventos', eventoId);
-        if (!cancelado) setEvento(dados);
-      } catch (err) {
-        console.error(err);
-        if (!cancelado) setError('Não foi possível carregar o evento.');
-      } finally {
-        if (!cancelado) setLoading(false);
+      if (ehAluno) {
+        const inscricoes = await buscarInscricoesDoAluno(usuario.alunoId);
+        setInscricao(inscricoes.find((i) => i.eventoId === dados._id) ?? null);
       }
+    } catch (err) {
+      console.error(err);
+      setError(err.message === 'Registro não encontrado.' ? 'Evento não encontrado.' : 'Não foi possível carregar o evento.');
+    } finally {
+      setLoading(false);
     }
+  }, [eventoId, ehAluno, usuario.alunoId]);
 
+  useEffect(() => {
     carregar();
-    return () => {
-      cancelado = true;
-    };
-  }, [eventoId]);
+  }, [carregar]);
 
-  if (loading) return <Loading>Carregando evento...</Loading>;
+  async function alternarInscricao() {
+    try {
+      setEnviando(true);
+      setResultado(null);
+      const resposta = inscricao
+        ? await cancelarInscricao(inscricao._id)
+        : await inscreverEmEvento(evento._id, usuario.alunoId);
+      setResultado({ tipo: 'ok', texto: resposta.message });
+      await carregar();
+    } catch (err) {
+      setResultado({ tipo: err.message.includes('já está inscrito') ? 'aviso' : 'erro', texto: err.message });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  if (loading && !evento) return <Loading>Carregando evento...</Loading>;
   if (error) return <ErrorMessage message={error} />;
   if (!evento) return null;
 
-  const vagasRestantes = evento.seatsTotal - evento.seatsUsed;
-  const seats = evento.status === 'lotado' ? 'Lista de espera' : `${vagasRestantes} vagas restantes`;
+  const vagasRestantes = Math.max(evento.seatsTotal - evento.seatsUsed, 0);
+  const lotado = vagasRestantes === 0;
+  const seats = lotado ? 'Sem vagas disponíveis' : `${vagasRestantes} vagas restantes`;
   const pct = evento.seatsTotal ? Math.round((evento.seatsUsed / evento.seatsTotal) * 100) : 0;
-  const cta = evento.status === 'inscrito' ? 'Cancelar inscrição' : evento.status === 'lotado' ? 'Entrar na lista de espera' : 'Confirmar inscrição';
+  const situacao = inscricao ? 'inscrito' : lotado ? 'lotado' : 'vagas';
 
   return (
     <div>
@@ -68,7 +96,7 @@ export default function EventoDetalhe({ eventoId, onVoltar }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: 20, alignItems: 'start' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-            <StatusBadge status={evento.status} />
+            <StatusBadge status={situacao} />
             <span style={{ fontSize: 13, color: cores.textoSecundario, fontWeight: 600 }}>{evento.category}</span>
           </div>
 
@@ -82,46 +110,12 @@ export default function EventoDetalhe({ eventoId, onVoltar }) {
 
           <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap', marginBottom: 22 }}>
             <Metrica label="Data" valor={evento.dateLabel} />
-            <Metrica label="Horário" valor={evento.time} />
+            <Metrica label="Horário" valor={evento.horaFim ? `${evento.time} – ${evento.horaFim}` : evento.time} />
+            <Metrica label="Local" valor={evento.place} />
             <Metrica label="Carga horária" valor={evento.hours} />
           </div>
 
-          {temGeo && (
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '18px 22px 0' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Local</div>
-                <div style={{ fontSize: 13.5, color: cores.textoSecundario, marginBottom: 16 }}>
-                  {evento.address || evento.place}
-                </div>
-              </div>
-              <div
-                style={{
-                  height: 220,
-                  background: 'repeating-linear-gradient(45deg,#EBE9F5,#EBE9F5 9px,#F5F4FB 9px,#F5F4FB 18px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative'
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background:
-                      'linear-gradient(transparent 49.5%,rgba(139,136,160,.22) 50%,transparent 50.5%),linear-gradient(90deg,transparent 49.5%,rgba(139,136,160,.22) 50%,transparent 50.5%)',
-                    backgroundSize: '60px 60px'
-                  }}
-                />
-                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50% 50% 50% 4px', transform: 'rotate(-45deg)', background: brand, boxShadow: '0 6px 18px rgba(27,26,35,.22)' }} />
-                  <div style={{ font: '500 11.5px ui-monospace,Menlo,monospace', color: '#5A5770', background: 'rgba(255,255,255,.85)', padding: '5px 10px', borderRadius: 8 }}>
-                    mapa · embed Google Maps
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
+          {temGeo && <BlocoMapa evento={evento} brand={brand} />}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -131,7 +125,25 @@ export default function EventoDetalhe({ eventoId, onVoltar }) {
             <div style={{ height: 8, borderRadius: 99, background: cores.divisor, overflow: 'hidden', marginBottom: 18 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: brand, borderRadius: 99 }} />
             </div>
-            <GhostButton style={{ width: '100%', height: 44, fontSize: 13.5 }}>{cta}</GhostButton>
+
+            {ehAluno &&
+              (inscricao ? (
+                <DangerGhostButton onClick={alternarInscricao} disabled={enviando} style={{ width: '100%', height: 44, fontSize: 13.5 }}>
+                  {enviando ? 'Cancelando...' : 'Cancelar inscrição'}
+                </DangerGhostButton>
+              ) : (
+                <PrimaryButton brand={brand} onClick={alternarInscricao} disabled={enviando} style={{ width: '100%', height: 44, fontSize: 13.5 }}>
+                  {enviando ? 'Inscrevendo...' : 'Inscrever-me'}
+                </PrimaryButton>
+              ))}
+
+            {resultado && (
+              <div style={{ marginTop: 16 }}>
+                {resultado.tipo === 'ok' && <SuccessMessage message={resultado.texto} />}
+                {resultado.tipo === 'aviso' && <WarningMessage message={resultado.texto} />}
+                {resultado.tipo === 'erro' && <ErrorMessage message={resultado.texto} />}
+              </div>
+            )}
           </Card>
 
           <Card>
@@ -145,6 +157,101 @@ export default function EventoDetalhe({ eventoId, onVoltar }) {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Mapa (Google Maps embutido, sem chave de API), dados de local e a
+// posição do usuário pela Geolocation API do navegador.
+function BlocoMapa({ evento, brand }) {
+  const [posicao, setPosicao] = useState(null);
+  const [erroPosicao, setErroPosicao] = useState('');
+  const [dispensado, setDispensado] = useState(false);
+
+  const temCoordenadas = evento.latitude != null && evento.longitude != null;
+  const consulta = temCoordenadas ? `${evento.latitude},${evento.longitude}` : evento.address || evento.place;
+  const rota = posicao
+    ? `https://www.google.com/maps/dir/?api=1&origin=${posicao.latitude},${posicao.longitude}&destination=${encodeURIComponent(consulta)}`
+    : null;
+
+  function permitir() {
+    setErroPosicao('');
+    if (!navigator.geolocation) {
+      setErroPosicao('Este navegador não oferece geolocalização.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) =>
+        setPosicao({
+          latitude: p.coords.latitude,
+          longitude: p.coords.longitude,
+          precisao: Math.round(p.coords.accuracy),
+          momento: new Date(p.timestamp).toLocaleString('pt-BR')
+        }),
+      () => setErroPosicao('Não foi possível obter sua localização.'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '18px 22px 0' }}>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Local do evento no mapa</div>
+          <div style={{ fontSize: 13.5, color: cores.textoSecundario, marginBottom: 16 }}>{evento.address || evento.place}</div>
+        </div>
+        <iframe
+          title="Mapa do evento"
+          src={`https://maps.google.com/maps?q=${encodeURIComponent(consulta)}&z=16&output=embed`}
+          style={{ width: '100%', height: 260, border: 0, display: 'block' }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+        {temCoordenadas && (
+          <div style={{ display: 'flex', gap: 26, padding: '16px 22px' }}>
+            <Metrica label="Latitude" valor={evento.latitude} />
+            <Metrica label="Longitude" valor={evento.longitude} />
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Minha localização</div>
+
+        {posicao ? (
+          <>
+            <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap', marginBottom: 16 }}>
+              <Metrica label="Latitude" valor={posicao.latitude.toFixed(4)} />
+              <Metrica label="Longitude" valor={posicao.longitude.toFixed(4)} />
+              <Metrica label="Precisão (m)" valor={posicao.precisao} />
+              <Metrica label="Momento" valor={posicao.momento} />
+            </div>
+            <a href={rota} target="_blank" rel="noreferrer" style={{ color: brand, fontWeight: 600, fontSize: 13.5 }}>
+              Ver rota até o evento →
+            </a>
+          </>
+        ) : (
+          !dispensado && (
+            <>
+              <WarningMessage message="O navegador solicitará permissão para usar sua localização (RF27)." />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <PrimaryButton brand={brand} onClick={permitir} style={{ height: 34, fontSize: 12.5, borderRadius: 10 }}>
+                  Permitir
+                </PrimaryButton>
+                <GhostButton onClick={() => setDispensado(true)}>Agora não</GhostButton>
+              </div>
+            </>
+          )
+        )}
+        {dispensado && !posicao && (
+          <GhostButton onClick={() => setDispensado(false)}>Usar minha localização</GhostButton>
+        )}
+        {erroPosicao && (
+          <div style={{ marginTop: 14 }}>
+            <ErrorMessage message={erroPosicao} />
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
